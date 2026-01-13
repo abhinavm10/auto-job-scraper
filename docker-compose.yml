@@ -3,6 +3,25 @@
 # ===========================================
 
 services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: job-auto-applier-db
+    environment:
+      - POSTGRES_USER=jobapplier
+      - POSTGRES_PASSWORD=jobapplier123
+      - POSTGRES_DB=auto_applier
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobapplier -d auto_applier"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   # Main FastAPI application
   app:
     build:
@@ -13,16 +32,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./data/auto_applier.db
+      - DATABASE_URL=postgresql://jobapplier:jobapplier123@db:5432/auto_applier
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-}
       - EMAIL_PORT=${EMAIL_PORT:-587}
       - EMAIL_USERNAME=${EMAIL_USERNAME:-}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
-    volumes:
-      # Persist database
-      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
@@ -41,16 +60,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./data/auto_applier.db
+      - DATABASE_URL=postgresql://jobapplier:jobapplier123@db:5432/auto_applier
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       # Mount source code for hot reload
       - ./app:/app/app:ro
       - ./tests:/app/tests:ro
-      - ./data:/app/data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
     profiles:
       - dev
 
 volumes:
-  data:
+  postgres_data:
