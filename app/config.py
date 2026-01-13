@@ -11,9 +11,11 @@ from typing import Optional
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
-    DATABASE_URL: str = "sqlite:///./auto_applier.db"
-    GEMINI_API_KEY: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
+    DATABASE_URL: str = "postgresql://jobapplier:jobapplier123@localhost:5432/auto_applier"
+    
+    # OpenRouter API Configuration
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_MODEL: str = "google/gemini-2.0-flash-exp:free"  # Default free model
     
     # Notification settings (placeholder)
     EMAIL_SMTP_SERVER: Optional[str] = None

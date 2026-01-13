@@ -8,7 +8,7 @@ from fastapi import FastAPI, BackgroundTasks
 from contextlib import asynccontextmanager
 from app.db.database import create_db_and_tables
 from app.core.scheduler import start_scheduler, run_daily_scan
-from app.core.analyzer import get_client
+from app.core.analyzer import get_client, test_api_connection
 from app.api.routers import router as api_router
 from app.config import settings
 
@@ -62,8 +62,8 @@ async def verify_system() -> dict:
     Verify that all system components are working correctly.
     
     Checks:
-        - Gemini API key is configured
-        - Gemini API connection is working
+        - OpenRouter API key is configured
+        - OpenRouter API connection is working
         - Database is accessible
     
     Returns:
@@ -73,36 +73,29 @@ async def verify_system() -> dict:
         "overall": "healthy",
         "checks": {
             "api_key_configured": False,
-            "gemini_api_working": False,
-            "gemini_model": None,
+            "openrouter_api_working": False,
+            "model": None,
             "database": False,
         },
         "errors": []
     }
     
     # Check 1: API Key configured
-    if settings.GEMINI_API_KEY:
+    if settings.OPENROUTER_API_KEY:
         status["checks"]["api_key_configured"] = True
     else:
         status["overall"] = "unhealthy"
-        status["errors"].append("GEMINI_API_KEY environment variable is not set")
+        status["errors"].append("OPENROUTER_API_KEY environment variable is not set")
     
-    # Check 2: Test Gemini API connection
+    # Check 2: Test OpenRouter API connection
     if status["checks"]["api_key_configured"]:
-        try:
-            client = get_client()
-            if client:
-                response = await client.aio.models.generate_content(
-                    model='gemini-2.0-flash',
-                    contents='Respond with exactly: OK',
-                    config={'max_output_tokens': 10}
-                )
-                if response and response.text:
-                    status["checks"]["gemini_api_working"] = True
-                    status["checks"]["gemini_model"] = "gemini-2.0-flash"
-        except Exception as e:
+        success, message = await test_api_connection()
+        if success:
+            status["checks"]["openrouter_api_working"] = True
+            status["checks"]["model"] = settings.OPENROUTER_MODEL
+        else:
             status["overall"] = "unhealthy"
-            status["errors"].append(f"Gemini API error: {str(e)}")
+            status["errors"].append(f"OpenRouter API error: {message}")
     
     # Check 3: Database connection
     try:
@@ -120,7 +113,7 @@ async def verify_system() -> dict:
     # Final overall status
     all_checks_passed = all(
         v for k, v in status["checks"].items() 
-        if k != "gemini_model"  # Skip non-boolean check
+        if k != "model"  # Skip non-boolean check
     )
     if not all_checks_passed:
         status["overall"] = "unhealthy"

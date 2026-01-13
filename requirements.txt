@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 sqlmodel
 playwright
-google-genai
+openai
 apscheduler
 python-dotenv
 pydantic-settings
