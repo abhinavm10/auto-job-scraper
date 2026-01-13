@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+playwright
+google-generativeai
+apscheduler
+python-dotenv
+pydantic-settings
+beautifulsoup4

@@ -1,0 +1,56 @@
+# ===========================================
+# Docker Compose for Job Auto-Applier
+# ===========================================
+
+services:
+  # Main FastAPI application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: job-auto-applier
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/auto_applier.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_USERNAME=${EMAIL_USERNAME:-}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+    volumes:
+      # Persist database
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Development service with hot reload
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dependencies
+    container_name: job-auto-applier-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/auto_applier.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      # Mount source code for hot reload
+      - ./app:/app/app:ro
+      - ./tests:/app/tests:ro
+      - ./data:/app/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    profiles:
+      - dev
+
+volumes:
+  data:
