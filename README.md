@@ -109,6 +109,7 @@ auto-applier/
 │   │   └── routers/
 │   │       ├── __init__.py        # Combined router export
 │   │       ├── companies.py       # Company CRUD endpoints
+│   │       ├── jobs.py            # Job listings endpoints
 │   │       └── profile.py         # User profile endpoints
 │   │
 │   ├── core/                      # Business logic layer
@@ -353,6 +354,103 @@ Triggers a background job scan for all active companies.
 ```
 
 ---
+
+#### Job Listings
+
+**List Jobs (with filters)**
+
+```http
+GET /jobs/?company_id=1&min_score=70&is_active=true&limit=50&offset=0
+```
+
+Query parameters (all optional):
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `company_id` | int | Filter by company ID |
+| `min_score` | int (0-100) | Minimum match score |
+| `is_active` | bool | Filter by active status |
+| `limit` | int (1-100) | Max results (default: 50) |
+| `offset` | int | Skip N results (pagination) |
+
+**Response:**
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Senior Python Developer",
+    "url": "https://careers.example.com/job/123",
+    "company_id": 1,
+    "location": "Remote",
+    "description_text": "We are looking for...",
+    "date_found": "2026-01-13T10:30:00",
+    "is_active": true,
+    "match_score": 85,
+    "match_reasoning": "Strong Python experience aligns well...",
+    "missing_skills": ["Kubernetes", "AWS"]
+  }
+]
+```
+
+---
+
+**Get Job Statistics**
+
+```http
+GET /jobs/stats
+```
+
+**Response:**
+
+```json
+{
+  "total_jobs": 150,
+  "active_jobs": 142,
+  "analyzed_jobs": 150,
+  "average_match_score": 62.5,
+  "score_distribution": {
+    "high_match_70_plus": 45,
+    "medium_match_40_69": 68,
+    "low_match_below_40": 37
+  }
+}
+```
+
+---
+
+**Get Job by ID**
+
+```http
+GET /jobs/{job_id}
+```
+
+**Response:** Single job object (same structure as list item)
+
+---
+
+**Get Jobs by Company**
+
+```http
+GET /jobs/company/{company_id}
+```
+
+**Response:** Array of job objects for the specified company
+
+---
+
+**Delete Job**
+
+```http
+DELETE /jobs/{job_id}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Job 1 deleted successfully"
+}
+```
 
 ## Request Flows
 
