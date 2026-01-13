@@ -3,7 +3,7 @@
 # ===========================================
 
 # Stage 1: Base image with Python and system dependencies
-FROM python:3.12-slim as base
+FROM python:3.12-slim AS base
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -39,7 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Dependencies installation
-FROM base as dependencies
+FROM base AS dependencies
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -51,7 +51,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN playwright install chromium
 
 # Stage 3: Production image
-FROM dependencies as production
+FROM dependencies AS production
 
 # Copy application code
 COPY app/ ./app/
